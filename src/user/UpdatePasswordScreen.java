@@ -5,18 +5,16 @@ import java.awt.*;
 
 public class UpdatePasswordScreen extends JFrame {
     public UpdatePasswordScreen() {
-        setTitle("Đăng nhập");
+        setTitle("Cập nhật mật khẩu");
         setSize(800, 600);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // Tiêu đề
         JLabel title = new JLabel("Cập nhật mật khẩu", SwingConstants.CENTER);
         title.setFont(new Font("Arial", Font.BOLD, 20));
         title.setBorder(BorderFactory.createEmptyBorder(100, 0, 0, 0));
         add(title, BorderLayout.NORTH);
 
-        // Form đăng nhập
         JPanel centeredPanel = new JPanel();
         centeredPanel.setLayout(new BorderLayout());
         centeredPanel.setBorder(BorderFactory.createEmptyBorder(10, 250, 300, 250));
@@ -36,7 +34,6 @@ public class UpdatePasswordScreen extends JFrame {
         JPasswordField confirmNewPasswordField = new JPasswordField();
         formPanel.add(confirmNewPasswordField);
 
-        // Nút Đăng nhập
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new BorderLayout());
         JButton signupButton = new JButton("Cập nhật");

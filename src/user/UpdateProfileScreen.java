@@ -5,18 +5,16 @@ import java.awt.*;
 
 public class UpdateProfileScreen extends JFrame {
     public UpdateProfileScreen() {
-        setTitle("Đăng ký tài khoản");
+        setTitle("Cập nhật thông tin tài khoản");
         setSize(800, 600);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        // Tiêu đề
         JLabel title = new JLabel("Cập nhật thông tin tài khoản", SwingConstants.CENTER);
         title.setFont(new Font("Arial", Font.BOLD, 20));
         title.setBorder(BorderFactory.createEmptyBorder(120, 0, 0, 0));
         add(title, BorderLayout.NORTH);
 
-        // Form đăng ký
         JPanel centeredPanel = new JPanel();
         centeredPanel.setLayout(new BorderLayout());
         centeredPanel.setBorder(BorderFactory.createEmptyBorder(10, 200, 200, 200));
@@ -44,7 +42,6 @@ public class UpdateProfileScreen extends JFrame {
         JComboBox<String> genderComboBox = new JComboBox<>(new String[]{"Nam", "Nữ", "Khác"});
         formPanel.add(genderComboBox);
 
-        // Nút Đăng ký
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new BorderLayout());
         JButton signupButton = new JButton("Cập nhật");

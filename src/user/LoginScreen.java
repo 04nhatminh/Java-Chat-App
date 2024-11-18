@@ -7,7 +7,7 @@ public class LoginScreen extends JFrame {
     public LoginScreen() {
         setTitle("Đăng nhập");
         setSize(800, 600);
-        setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
         // Tiêu đề
