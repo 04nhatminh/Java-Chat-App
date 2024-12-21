@@ -1,5 +1,3 @@
-package presentation;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
@@ -53,7 +51,7 @@ public class SignupScreen extends JFrame {
         JTextField addressField = new JTextField();
         formPanel.add(addressField);
 
-        formPanel.add(new JLabel("Ngày sinh (dd/mm/yyyy):"));
+        formPanel.add(new JLabel("Ngày sinh (yyyy/mm/dd):"));
         JTextField dobField = new JTextField();
         formPanel.add(dobField);
 
@@ -63,9 +61,11 @@ public class SignupScreen extends JFrame {
 
         // Nút Đăng ký
         JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new BorderLayout());
+        buttonPanel.setLayout(new GridLayout(1, 2, 10, 10));
         JButton signupButton = new JButton("Đăng ký");
-        buttonPanel.add(signupButton, BorderLayout.CENTER);
+        JButton loginButton = new JButton("Chuyển đến Đăng nhập");
+        buttonPanel.add(signupButton);
+        buttonPanel.add(loginButton);
 
         centeredPanel.add(formPanel, BorderLayout.CENTER);
         centeredPanel.add(buttonPanel, BorderLayout.SOUTH);
@@ -80,11 +80,19 @@ public class SignupScreen extends JFrame {
                 String username = usernameField.getText();
                 String password = new String(passwordField.getPassword());
                 String confirmPassword = new String(confirmPasswordField.getPassword());
-                String fullname = fullnameField.getText();
+                String name = fullnameField.getText();
                 String email = emailField.getText();
                 String address = addressField.getText();
                 String dob = dobField.getText();
                 String gender = (String) genderComboBox.getSelectedItem();
+
+                // Kiểm tra các trường thông tin
+                if (username.isEmpty() || password.isEmpty() || confirmPassword.isEmpty() || name.isEmpty() ||
+                        email.isEmpty() || address.isEmpty() || dob.isEmpty() || gender.isEmpty()) {
+                    JOptionPane.showMessageDialog(SignupScreen.this, "Vui lòng nhập đầy đủ thông tin!", "Lỗi",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
 
                 if (!password.equals(confirmPassword)) {
                     JOptionPane.showMessageDialog(SignupScreen.this, "Mật khẩu xác nhận không khớp!", "Lỗi",
@@ -92,7 +100,7 @@ public class SignupScreen extends JFrame {
                     return;
                 }
 
-                User newUser = new User(username, password, fullname, email, address, dob, gender);
+                User newUser = new User(username, password, name, email, address, dob, gender);
 
                 try {
                     UserBUS userBUS = new UserBUS();
@@ -100,6 +108,9 @@ public class SignupScreen extends JFrame {
                         JOptionPane.showMessageDialog(SignupScreen.this, "Đăng ký thành công!", "Thành công",
                                 JOptionPane.INFORMATION_MESSAGE);
                         dispose();
+                        // Mở trang đăng nhập
+                        LoginScreen loginScreen = new LoginScreen();
+                        loginScreen.setVisible(true);
                     } else {
                         JOptionPane.showMessageDialog(SignupScreen.this, "Đăng ký thất bại!", "Lỗi",
                                 JOptionPane.ERROR_MESSAGE);
@@ -108,6 +119,16 @@ public class SignupScreen extends JFrame {
                     JOptionPane.showMessageDialog(SignupScreen.this, "Đã xảy ra lỗi: " + ex.getMessage(), "Lỗi",
                             JOptionPane.ERROR_MESSAGE);
                 }
+            }
+        });
+
+        // Xử lý sự kiện cho nút "Chuyển đến Đăng nhập"
+        loginButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                dispose();
+                LoginScreen loginScreen = new LoginScreen();
+                loginScreen.setVisible(true);
             }
         });
     }

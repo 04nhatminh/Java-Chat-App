@@ -9,7 +9,7 @@ import java.sql.SQLException;
 import dto.User;
 
 public class UserDAO {
-    public static boolean isUsernameExists(String username) throws SQLException {
+    public boolean isUsernameExists(String username) throws SQLException {
         String query = "SELECT COUNT(*) FROM user WHERE username = ?";
         try (Connection connection = DatabaseConnection.getConnection();
                 PreparedStatement statement = connection.prepareStatement(query)) {
@@ -24,7 +24,7 @@ public class UserDAO {
     }
 
     public boolean insertUser(User user) throws SQLException {
-        String sql = "INSERT INTO user (username, password, fullname, email, address, dob, gender) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO user (username, password, name, email, address, dob, gender) VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConnection.getConnection();
                 PreparedStatement stmt = conn.prepareStatement(sql)) {
 
@@ -53,5 +53,72 @@ public class UserDAO {
             e.printStackTrace();
             return false;
         }
+    }
+
+    public boolean updateUserStatus(String username, String status) throws SQLException {
+        String sql = "UPDATE user SET status = ? WHERE username = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, status);
+            stmt.setString(2, username);
+            int rowsUpdated = stmt.executeUpdate();
+            return rowsUpdated > 0; // Trả về true nếu có ít nhất 1 dòng được cập nhật
+        }
+    }
+
+    public String getNameByUsername(String username) throws SQLException {
+        String query = "SELECT name FROM user WHERE username = ?";
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, username);
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getString("name");
+                }
+            }
+        }
+        return null;
+    }
+
+    public boolean updateUser(User user) throws SQLException {
+        String sql = "UPDATE user SET name = ?, email = ?, address = ?, dob = ?, gender = ? WHERE username = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, user.getFullname());
+            stmt.setString(2, user.getEmail());
+            stmt.setString(3, user.getAddress());
+            stmt.setString(4, user.getDob());
+            stmt.setString(5, user.getGender());
+            stmt.setString(6, user.getUsername());
+
+            int rowsUpdated = stmt.executeUpdate();
+            return rowsUpdated > 0; // Trả về true nếu có ít nhất 1 dòng được cập nhật
+        }
+    }
+
+    public boolean updatePassword(String username, String newPassword) throws SQLException {
+        String sql = "UPDATE user SET password = ? WHERE username = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, newPassword);
+            stmt.setString(2, username);
+
+            int rowsUpdated = stmt.executeUpdate();
+            return rowsUpdated > 0; // Trả về true nếu có ít nhất 1 dòng được cập nhật
+        }
+    }
+
+    public String getEmailByUsername(String username) throws SQLException {
+        String query = "SELECT email FROM user WHERE username = ?";
+        try (Connection connection = DatabaseConnection.getConnection();
+                PreparedStatement preparedStatement = connection.prepareStatement(query)) {
+            preparedStatement.setString(1, username);
+            try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getString("email");
+                }
+            }
+        }
+        return null;
     }
 }

@@ -1,5 +1,3 @@
-package presentation;
-
 import bus.UserBUS;
 import javax.swing.*;
 import java.awt.*;
@@ -35,9 +33,11 @@ public class LoginScreen extends JFrame {
 
         // Nút Đăng nhập
         JPanel buttonPanel = new JPanel();
-        buttonPanel.setLayout(new BorderLayout());
+        buttonPanel.setLayout(new GridLayout(1, 2, 10, 10));
         JButton loginButton = new JButton("Đăng nhập");
-        buttonPanel.add(loginButton, BorderLayout.CENTER);
+        JButton signupButton = new JButton("Chuyển đến Đăng ký");
+        buttonPanel.add(loginButton);
+        buttonPanel.add(signupButton);
 
         centeredPanel.add(formPanel, BorderLayout.CENTER);
         centeredPanel.add(buttonPanel, BorderLayout.SOUTH);
@@ -53,9 +53,19 @@ public class LoginScreen extends JFrame {
             UserBUS userBUS = new UserBUS();
             if (userBUS.checkLogin(username, password)) {
                 JOptionPane.showMessageDialog(this, "Đăng nhập thành công!");
+                dispose();
+                ChatScreen chatScreen = new ChatScreen(username);
+                chatScreen.setVisible(true);
             } else {
                 JOptionPane.showMessageDialog(this, "Tên đăng nhập hoặc mật khẩu sai!");
             }
+        });
+
+        // Thêm sự kiện cho nút "Chuyển đến Đăng ký"
+        signupButton.addActionListener(e -> {
+            dispose();
+            SignupScreen signupScreen = new SignupScreen();
+            signupScreen.setVisible(true);
         });
     }
 
