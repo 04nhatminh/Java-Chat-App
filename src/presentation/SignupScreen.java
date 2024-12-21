@@ -1,7 +1,12 @@
-package user;
+package presentation;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+import bus.UserBUS;
+import dto.User;
 
 public class SignupScreen extends JFrame {
     public SignupScreen() {
@@ -53,7 +58,7 @@ public class SignupScreen extends JFrame {
         formPanel.add(dobField);
 
         formPanel.add(new JLabel("Giới tính:"));
-        JComboBox<String> genderComboBox = new JComboBox<>(new String[]{"Nam", "Nữ", "Khác"});
+        JComboBox<String> genderComboBox = new JComboBox<>(new String[] { "Nam", "Nữ", "Khác" });
         formPanel.add(genderComboBox);
 
         // Nút Đăng ký
@@ -67,6 +72,44 @@ public class SignupScreen extends JFrame {
         add(centeredPanel, BorderLayout.CENTER);
 
         setLocationRelativeTo(null);
+
+        // Xử lý sự kiện đăng ký
+        signupButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                String username = usernameField.getText();
+                String password = new String(passwordField.getPassword());
+                String confirmPassword = new String(confirmPasswordField.getPassword());
+                String fullname = fullnameField.getText();
+                String email = emailField.getText();
+                String address = addressField.getText();
+                String dob = dobField.getText();
+                String gender = (String) genderComboBox.getSelectedItem();
+
+                if (!password.equals(confirmPassword)) {
+                    JOptionPane.showMessageDialog(SignupScreen.this, "Mật khẩu xác nhận không khớp!", "Lỗi",
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+
+                User newUser = new User(username, password, fullname, email, address, dob, gender);
+
+                try {
+                    UserBUS userBUS = new UserBUS();
+                    if (userBUS.registerUser(newUser)) {
+                        JOptionPane.showMessageDialog(SignupScreen.this, "Đăng ký thành công!", "Thành công",
+                                JOptionPane.INFORMATION_MESSAGE);
+                        dispose();
+                    } else {
+                        JOptionPane.showMessageDialog(SignupScreen.this, "Đăng ký thất bại!", "Lỗi",
+                                JOptionPane.ERROR_MESSAGE);
+                    }
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(SignupScreen.this, "Đã xảy ra lỗi: " + ex.getMessage(), "Lỗi",
+                            JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
     }
 
     public static void main(String[] args) {
