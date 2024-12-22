@@ -130,7 +130,7 @@ public class UpdateProfileScreen extends JFrame {
             }
 
             // Tạo đối tượng User mới
-            User user = new User(username, null, fullname, email, address, dob, gender);
+            User user = new User(username, null, fullname, email, address, dob, gender, null);
 
             // Cập nhật thông tin người dùng
             UserBUS userBUS = new UserBUS();

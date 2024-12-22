@@ -1,14 +1,20 @@
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DefaultHighlighter;
+import javax.swing.text.Highlighter;
 
 import java.awt.*;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
 import bus.UserBUS;
 import dao.ChatDAO;
 import dao.UserDAO;
 import dto.Message;
+import dto.User;
 
 public class ChatScreen extends JFrame {
     private String username;
@@ -16,13 +22,15 @@ public class ChatScreen extends JFrame {
     private UserDAO userDAO;
     private JTextArea chatArea;
     private JLabel chatWithLabel;
+    private String currentChatWith;
+    private String lastTimestamp;
 
     public ChatScreen(String username) {
         this.username = username;
         this.chatDAO = new ChatDAO();
         this.userDAO = new UserDAO();
         setTitle("Chat Application");
-        setSize(800, 600);
+        setSize(1000, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
@@ -56,8 +64,8 @@ public class ChatScreen extends JFrame {
         chatListPanel.add(Box.createRigidArea(new Dimension(0, 10))); // Khoảng cách cố định
 
         try {
-            List<String> chatList = chatDAO.getChatList(username);
-            for (String chatWith : chatList) {
+            List<User> friends = userDAO.getFriends(username);
+            for (User friend : friends) {
                 JPanel singleChatPanel = new JPanel(new BorderLayout());
                 singleChatPanel.setPreferredSize(new Dimension(400, 20)); // Chiều cao cố định
 
@@ -70,9 +78,8 @@ public class ChatScreen extends JFrame {
                 // Kết hợp LineBorder và EmptyBorder
                 singleChatPanel.setBorder(BorderFactory.createCompoundBorder(lineBorder, emptyBorder));
 
-                String friendName = userDAO.getNameByUsername(chatWith); // Lấy tên người dùng
-                JLabel friendLabel = new JLabel(friendName);
-                JLabel lastMessageLabel = new JLabel(chatDAO.getLastMessage(username, chatWith));
+                JLabel friendLabel = new JLabel(friend.getFullname());
+                JLabel lastMessageLabel = new JLabel(chatDAO.getLastMessage(username, friend.getUsername()));
                 singleChatPanel.add(friendLabel, BorderLayout.NORTH);
                 singleChatPanel.add(lastMessageLabel, BorderLayout.SOUTH);
                 chatListPanel.add(singleChatPanel);
@@ -80,7 +87,7 @@ public class ChatScreen extends JFrame {
 
                 singleChatPanel.addMouseListener(new java.awt.event.MouseAdapter() {
                     public void mouseClicked(java.awt.event.MouseEvent evt) {
-                        loadChat(chatWith);
+                        loadChat(friend.getUsername());
                     }
                 });
             }
@@ -94,13 +101,20 @@ public class ChatScreen extends JFrame {
         JPanel chatPanel = new JPanel(new BorderLayout());
 
         JPanel chatHeaderPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        chatWithLabel = new JLabel("Chọn một cuộc trò chuyện");
-        JButton oldMessagesButton = new JButton("Tra cứu tin nhắn cũ");
+        chatWithLabel = new JLabel("");
         JButton reportSpamButton = new JButton("Báo cáo spam");
+        JTextField searchField = new JTextField(15);
+        JButton searchButton = new JButton("Tìm kiếm");
+        // Thêm nút xóa toàn bộ lịch sử chat
+        JButton deleteAllButton = new JButton("Xóa toàn bộ lịch sử chat");
+        JButton globalSearchButton = new JButton("Tìm kiếm toàn bộ");
 
         chatHeaderPanel.add(chatWithLabel);
-        chatHeaderPanel.add(oldMessagesButton);
         chatHeaderPanel.add(reportSpamButton);
+        chatHeaderPanel.add(deleteAllButton);
+        chatHeaderPanel.add(searchField);
+        chatHeaderPanel.add(searchButton);
+        chatHeaderPanel.add(globalSearchButton);
 
         chatArea = new JTextArea();
         chatArea.setEditable(false);
@@ -158,18 +172,90 @@ public class ChatScreen extends JFrame {
             loginScreen.setVisible(true);
         });
 
+        deleteAllButton.addActionListener(e -> {
+            int confirm = JOptionPane.showConfirmDialog(this, "Bạn có chắc chắn muốn xóa toàn bộ lịch sử chat?",
+                    "Xác nhận", JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                try {
+                    boolean success = chatDAO.deleteAllMessages(username, currentChatWith);
+                    if (success) {
+                        chatArea.setText("");
+                        JOptionPane.showMessageDialog(this, "Đã xóa toàn bộ lịch sử chat.");
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Xóa lịch sử chat thất bại!", "Lỗi",
+                                JOptionPane.ERROR_MESSAGE);
+                    }
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+
+        searchButton.addActionListener(e -> {
+            String searchText = searchField.getText().trim();
+            if (!searchText.isEmpty()) {
+                try {
+                    List<Message> searchResults = chatDAO.searchMessages(username, currentChatWith, searchText);
+                    chatArea.setText("");
+                    for (Message message : searchResults) {
+                        String senderName = userDAO.getNameByUsername(message.getSender());
+                        chatArea.append(senderName + ": " + message.getContent() + "\n");
+                    }
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+
+        globalSearchButton.addActionListener(e -> {
+            String searchText = searchField.getText().trim();
+            if (!searchText.isEmpty()) {
+                try {
+                    List<Message> searchResults = chatDAO.searchMessagesInAllChats(username, searchText);
+                    if (!searchResults.isEmpty()) {
+                        JList<Message> resultList = new JList<>(searchResults.toArray(new Message[0]));
+                        resultList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+                        resultList.addListSelectionListener(event -> {
+                            if (!event.getValueIsAdjusting()) {
+                                Message selectedMessage = resultList.getSelectedValue();
+                                if (selectedMessage != null) {
+                                    loadChat(
+                                            selectedMessage.getSender().equals(username) ? selectedMessage.getReceiver()
+                                                    : selectedMessage.getSender());
+                                    scrollToMessage(selectedMessage);
+                                }
+                            }
+                        });
+                        JOptionPane.showMessageDialog(this, new JScrollPane(resultList), "Kết quả tìm kiếm",
+                                JOptionPane.INFORMATION_MESSAGE);
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Không tìm thấy kết quả nào.", "Kết quả tìm kiếm",
+                                JOptionPane.INFORMATION_MESSAGE);
+                    }
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+
+        createGroupButton.addActionListener(e -> {
+            dispose();
+            CreateGroupScreen createGroupScreen = new CreateGroupScreen(username);
+            createGroupScreen.setVisible(true);
+        });
+
         sendButton.addActionListener(e -> {
             String content = messageField.getText();
             if (!content.isEmpty()) {
                 try {
                     // Tạo tin nhắn mới
-                    Message message = new Message(username, chatWithLabel.getText().replace("Đang chat với: ", ""),
+                    Message message = new Message(username, currentChatWith,
                             content, new java.sql.Timestamp(System.currentTimeMillis()).toString());
                     boolean isInserted = chatDAO.insertMessage(message);
                     if (isInserted) {
                         // Hiển thị tin nhắn mới lên màn hình chat
-                        chatArea.append(username + ": " + content + "\n");
                         messageField.setText(""); // Xóa nội dung trong trường nhập liệu
+                        lastTimestamp = message.getCreatedAt(); // Cập nhật lastTimestamp
                     } else {
                         JOptionPane.showMessageDialog(this, "Gửi tin nhắn thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
                     }
@@ -178,17 +264,60 @@ public class ChatScreen extends JFrame {
                 }
             }
         });
+
+        // Sử dụng Timer để kiểm tra tin nhắn mới mỗi giây
+        Timer timer = new Timer();
+        timer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (currentChatWith != null) {
+                    loadNewMessages(currentChatWith);
+                }
+            }
+        }, 0, 1000); // 1000ms = 1 giây
+    }
+
+    private void scrollToMessage(Message message) {
+        try {
+            String searchText = message.getContent();
+            int pos = chatArea.getText().indexOf(searchText);
+            if (pos >= 0) {
+                chatArea.setCaretPosition(pos);
+                chatArea.requestFocusInWindow();
+                Highlighter highlighter = chatArea.getHighlighter();
+                Highlighter.HighlightPainter painter = new DefaultHighlighter.DefaultHighlightPainter(Color.YELLOW);
+                highlighter.removeAllHighlights();
+                highlighter.addHighlight(pos, pos + searchText.length(), painter);
+            }
+        } catch (BadLocationException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadNewMessages(String chatWith) {
+        try {
+            List<Message> newMessages = chatDAO.getNewMessages(username, chatWith, lastTimestamp);
+            for (Message message : newMessages) {
+                String senderName = userDAO.getNameByUsername(message.getSender());
+                chatArea.append(senderName + ": " + message.getContent() + "\n");
+                lastTimestamp = message.getCreatedAt(); // Cập nhật lastTimestamp
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     private void loadChat(String chatWith) {
         try {
+            currentChatWith = chatWith;
             String name = userDAO.getNameByUsername(chatWith);
-            chatWithLabel.setText("Đang chat với: " + name);
+            chatWithLabel.setText(name);
             List<Message> messages = chatDAO.getMessages(username, chatWith);
             chatArea.setText("");
             for (Message message : messages) {
                 String senderName = userDAO.getNameByUsername(message.getSender());
                 chatArea.append(senderName + ": " + message.getContent() + "\n");
+                lastTimestamp = message.getCreatedAt(); // Cập nhật lastTimestamp
             }
         } catch (SQLException e) {
             e.printStackTrace();

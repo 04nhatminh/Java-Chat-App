@@ -1,8 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
 import bus.UserBUS;
-import emailService.PasswordUtil;
-import emailService.EmailUtil;
+import utils.EmailSender;
 
 public class UpdatePasswordScreen extends JFrame {
     private String username;
@@ -60,9 +59,9 @@ public class UpdatePasswordScreen extends JFrame {
 
         JPanel buttonPanel = new JPanel();
         buttonPanel.setLayout(new BorderLayout());
-        JButton signupButton = new JButton("Cập nhật");
+        JButton updateButton = new JButton("Cập nhật");
         JButton resetPasswordButton = new JButton("Khởi tạo mật khẩu");
-        buttonPanel.add(signupButton, BorderLayout.EAST);
+        buttonPanel.add(updateButton, BorderLayout.EAST);
         buttonPanel.add(resetPasswordButton, BorderLayout.WEST);
 
         centeredPanel.add(formPanel, BorderLayout.CENTER);
@@ -72,7 +71,7 @@ public class UpdatePasswordScreen extends JFrame {
         setLocationRelativeTo(null);
 
         // Thêm sự kiện cho nút "Cập nhật"
-        signupButton.addActionListener(e -> {
+        updateButton.addActionListener(e -> {
             String oldPassword = new String(oldPasswordField.getPassword());
             String newPassword = new String(newPasswordField.getPassword());
             String confirmNewPassword = new String(confirmNewPasswordField.getPassword());
@@ -103,23 +102,37 @@ public class UpdatePasswordScreen extends JFrame {
 
         // Thêm sự kiện cho nút "Khởi tạo mật khẩu"
         resetPasswordButton.addActionListener(e -> {
-            // Tạo mật khẩu ngẫu nhiên
-            String newPassword = PasswordUtil.generateRandomPassword();
+            try {
+                // Tạo mật khẩu ngẫu nhiên
+                String newPassword = generateRandomPassword();
 
-            // Cập nhật mật khẩu trong cơ sở dữ liệu
-            UserBUS userBUS = new UserBUS();
-            boolean isUpdated = userBUS.updatePassword(username, newPassword);
-            if (isUpdated) {
-                // Gửi email cho người dùng
-                String email = userBUS.getUserEmail(username);
-                String subject = "Mật khẩu mới của bạn";
-                String content = "Mật khẩu mới của bạn là: " + newPassword;
-                EmailUtil.sendEmail(email, subject, content);
+                // Cập nhật mật khẩu trong cơ sở dữ liệu
+                UserBUS userBUS = new UserBUS();
+                boolean isUpdated = userBUS.updatePassword(username, newPassword);
+                // if (isUpdated) {
+                // // Gửi email cho người dùng
+                // String email = userBUS.getUserEmail(username);
+                // if (email == null || email.isEmpty()) {
+                // JOptionPane.showMessageDialog(this, "Không tìm thấy email của người dùng!",
+                // "Lỗi",
+                // JOptionPane.ERROR_MESSAGE);
+                // return;
+                // }
 
-                JOptionPane.showMessageDialog(this, "Mật khẩu mới đã được gửi đến email của bạn!", "Thành công",
-                        JOptionPane.INFORMATION_MESSAGE);
-            } else {
-                JOptionPane.showMessageDialog(this, "Khởi tạo mật khẩu thất bại!", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                // String subject = "Mật khẩu mới của bạn";
+                // String content = "Mật khẩu mới của bạn là: " + newPassword;
+
+                // EmailSender.sendEmail(email, subject, content);
+                // JOptionPane.showMessageDialog(this, "Mật khẩu mới đã được gửi đến email của
+                // bạn!", "Thành công",
+                // JOptionPane.INFORMATION_MESSAGE);
+                // } else {
+                // JOptionPane.showMessageDialog(this, "Khởi tạo mật khẩu thất bại!", "Lỗi",
+                // JOptionPane.ERROR_MESSAGE);
+                // }
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, "Lỗi khi gửi email: " + ex.getMessage(), "Lỗi",
+                        JOptionPane.ERROR_MESSAGE);
             }
         });
 
@@ -160,10 +173,13 @@ public class UpdatePasswordScreen extends JFrame {
         });
     }
 
+    private String generateRandomPassword() {
+        return Long.toHexString(Double.doubleToLongBits(Math.random())).substring(0, 6);
+    }
+
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> {
-            UpdatePasswordScreen updatePasswordScreen = new UpdatePasswordScreen("username"); // Thay "username" bằng
-                                                                                              // tên người dùng thực tế
+            UpdatePasswordScreen updatePasswordScreen = new UpdatePasswordScreen("username");
             updatePasswordScreen.setVisible(true);
         });
     }

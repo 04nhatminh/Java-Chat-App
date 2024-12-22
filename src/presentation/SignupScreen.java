@@ -100,7 +100,7 @@ public class SignupScreen extends JFrame {
                     return;
                 }
 
-                User newUser = new User(username, password, name, email, address, dob, gender);
+                User newUser = new User(username, password, name, email, address, dob, gender, null);
 
                 try {
                     UserBUS userBUS = new UserBUS();

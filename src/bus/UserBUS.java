@@ -1,9 +1,11 @@
 package bus;
 
 import java.sql.SQLException;
+import java.util.List;
 
 import dao.UserDAO;
 import dto.User;
+import utils.EmailSender;
 
 public class UserBUS {
     private UserDAO userDAO;
@@ -25,55 +27,19 @@ public class UserBUS {
     }
 
     public boolean registerUser(User user) {
-        // Kiểm tra tính hợp lệ của dữ liệu người dùng
-        if (user.getUsername() == null || user.getUsername().isEmpty()) {
-            System.out.println("Tên đăng nhập không được để trống.");
-            return false;
-        }
-        if (user.getPassword() == null || user.getPassword().isEmpty()) {
-            System.out.println("Mật khẩu không được để trống.");
-            return false;
-        }
-        if (user.getEmail() == null || user.getEmail().isEmpty()) {
-            System.out.println("Email không được để trống.");
-            return false;
-        }
-        // Kiểm tra độ dài mật khẩu
-        if (user.getPassword().length() < 6) {
-            System.out.println("Mật khẩu phải có ít nhất 6 ký tự.");
-            return false;
-        }
-        // Kiểm tra định dạng email
-        if (!user.getEmail().matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
-            System.out.println("Email không hợp lệ.");
+        if (isInvalidUser(user)) {
             return false;
         }
 
-        // Kiểm tra tên đăng nhập đã tồn tại
         try {
             if (userDAO.isUsernameExists(user.getUsername())) {
                 System.out.println("Tên đăng nhập đã tồn tại.");
                 return false;
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
-
-        // Nếu tất cả kiểm tra đều hợp lệ, tiến hành đăng ký người dùng
-        try {
             return userDAO.insertUser(user);
         } catch (SQLException e) {
             e.printStackTrace();
             return false;
-        }
-    }
-
-    public void logoutUser(String username) {
-        try {
-            userDAO.updateUserStatus(username, "off");
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
     }
 
@@ -101,7 +67,7 @@ public class UserBUS {
         }
     }
 
-    // Thêm phương thức updatePassword với hai tham số
+    // Phương thức updatePassword với hai tham số
     public boolean updatePassword(String username, String newPassword) {
         try {
             return userDAO.updatePassword(username, newPassword);
@@ -111,12 +77,113 @@ public class UserBUS {
         }
     }
 
-    public String getUserEmail(String username) {
+    private boolean isInvalidUser(User user) {
+        if (user.getUsername() == null || user.getUsername().isEmpty()) {
+            System.out.println("Tên đăng nhập không được để trống.");
+            return true;
+        }
+        if (user.getPassword() == null || user.getPassword().isEmpty() || user.getPassword().length() < 6) {
+            System.out.println("Mật khẩu không hợp lệ.");
+            return true;
+        }
+        if (user.getEmail() == null || !user.getEmail().matches("^[A-Za-z0-9+_.-]+@(.+)$")) {
+            System.out.println("Email không hợp lệ.");
+            return true;
+        }
+        return false;
+    }
+
+    public void logoutUser(String username) {
         try {
-            return userDAO.getEmailByUsername(username);
+            userDAO.updateUserStatus(username, "off");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public List<User> getFriends(String username) {
+        try {
+            return userDAO.getFriends(username);
         } catch (SQLException e) {
             e.printStackTrace();
             return null;
+        }
+    }
+
+    public boolean blockUser(String blocker, String blocked) {
+        try {
+            return this.unfriend(blocker, blocked) && userDAO.blockUser(blocker, blocked);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean isBlocked(String blocker, String blocked) {
+        try {
+            return userDAO.isBlocked(blocker, blocked);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean unfriend(String username1, String username2) {
+        try {
+            return userDAO.deleteRelationship(username1, username2, "follow")
+                    && userDAO.deleteRelationship(username2, username1, "follow");
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean sendFriendRequest(String fromUsername, String toUsername) {
+        try {
+            if (isBlocked(toUsername, fromUsername)) {
+                System.out.println("Cannot send friend request. The user has blocked you.");
+                return false;
+            }
+            return userDAO.updateRelationship(fromUsername, toUsername, "follow");
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public User findUserByName(String name, String currentUsername) {
+        try {
+            return userDAO.findUserByName(name, currentUsername);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public List<User> getFriendRequests(String username) {
+        try {
+            return userDAO.getFriendRequests(username);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public boolean acceptFriendRequest(String username1, String username2) {
+        try {
+            return userDAO.updateRelationship(username1, username2, "follow");
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean declineFriendRequest(String username1, String username2) {
+        try {
+            return userDAO.deleteRelationship(username2, username1, "follow");
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
         }
     }
 }

@@ -28,4 +28,9 @@ public class Message {
     public String getCreatedAt() {
         return createdAt;
     }
+
+    @Override
+    public String toString() {
+        return sender + ": " + content + " (" + createdAt + ")";
+    }
 }

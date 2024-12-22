@@ -32,6 +32,29 @@ public class ChatDAO {
         return messages;
     }
 
+    public List<Message> getNewMessages(String username, String chatWith, String lastTimestamp) throws SQLException {
+        List<Message> messages = new ArrayList<>();
+        String sql = "SELECT sender, content, createdAt FROM message WHERE ((sender = ? AND receiver = ?) OR (sender = ? AND receiver = ?)) AND createdAt > ? ORDER BY createdAt";
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, username);
+            stmt.setString(2, chatWith);
+            stmt.setString(3, chatWith);
+            stmt.setString(4, username);
+            stmt.setString(5, lastTimestamp);
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    String sender = rs.getString("sender");
+                    String receiver = chatWith;
+                    String content = rs.getString("content");
+                    String createdAt = rs.getString("createdAt");
+                    messages.add(new Message(sender, receiver, content, createdAt));
+                }
+            }
+        }
+        return messages;
+    }
+
     public List<String> getChatList(String username) throws SQLException {
         List<String> chatList = new ArrayList<>();
         String sql = "SELECT DISTINCT IF(sender = ?, receiver, sender) AS chatWith FROM message WHERE sender = ? OR receiver = ?";
@@ -79,5 +102,75 @@ public class ChatDAO {
             int rowsInserted = stmt.executeUpdate();
             return rowsInserted > 0; // Trả về true nếu có ít nhất 1 dòng được thêm
         }
+    }
+
+    public boolean deleteAllMessages(String username, String chatWith) throws SQLException {
+        String sql = "DELETE FROM message WHERE (sender = ? AND receiver = ?) OR (sender = ? AND receiver = ?)";
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, username);
+            stmt.setString(2, chatWith);
+            stmt.setString(3, chatWith);
+            stmt.setString(4, username);
+            int rowsDeleted = stmt.executeUpdate();
+            return rowsDeleted > 0;
+        }
+    }
+
+    public boolean deleteMessages(List<Integer> messageIds) throws SQLException {
+        String sql = "DELETE FROM message WHERE messageId = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            for (int messageId : messageIds) {
+                stmt.setInt(1, messageId);
+                stmt.addBatch();
+            }
+            int[] rowsDeleted = stmt.executeBatch();
+            return rowsDeleted.length > 0;
+        }
+    }
+
+    public List<Message> searchMessages(String username, String chatWith, String searchText) throws SQLException {
+        List<Message> messages = new ArrayList<>();
+        String sql = "SELECT sender, content, createdAt FROM message WHERE ((sender = ? AND receiver = ?) OR (sender = ? AND receiver = ?)) AND content LIKE ? ORDER BY createdAt";
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, username);
+            stmt.setString(2, chatWith);
+            stmt.setString(3, chatWith);
+            stmt.setString(4, username);
+            stmt.setString(5, "%" + searchText + "%");
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    String sender = rs.getString("sender");
+                    String receiver = chatWith;
+                    String content = rs.getString("content");
+                    String createdAt = rs.getString("createdAt");
+                    messages.add(new Message(sender, receiver, content, createdAt));
+                }
+            }
+        }
+        return messages;
+    }
+
+    public List<Message> searchMessagesInAllChats(String username, String searchText) throws SQLException {
+        List<Message> messages = new ArrayList<>();
+        String sql = "SELECT sender, receiver, content, createdAt FROM message WHERE (sender = ? OR receiver = ?) AND content LIKE ? ORDER BY createdAt";
+        try (Connection conn = DatabaseConnection.getConnection();
+                PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, username);
+            stmt.setString(2, username);
+            stmt.setString(3, "%" + searchText + "%");
+            try (ResultSet rs = stmt.executeQuery()) {
+                while (rs.next()) {
+                    String sender = rs.getString("sender");
+                    String receiver = rs.getString("receiver");
+                    String content = rs.getString("content");
+                    String createdAt = rs.getString("createdAt");
+                    messages.add(new Message(sender, receiver, content, createdAt));
+                }
+            }
+        }
+        return messages;
     }
 }

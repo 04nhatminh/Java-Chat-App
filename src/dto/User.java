@@ -8,9 +8,11 @@ public class User {
     private String address;
     private String dob;
     private String gender;
+    private String status;
 
+    // Constructor đầy đủ
     public User(String username, String password, String fullname, String email, String address, String dob,
-            String gender) {
+            String gender, String status) {
         this.username = username;
         this.password = password;
         this.fullname = fullname;
@@ -18,9 +20,10 @@ public class User {
         this.address = address;
         this.dob = dob;
         this.gender = gender;
+        this.status = status;
     }
 
-    // Getter và Setter
+    // Getters và setters
     public String getUsername() {
         return username;
     }
@@ -75,5 +78,13 @@ public class User {
 
     public void setGender(String gender) {
         this.gender = gender;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }
